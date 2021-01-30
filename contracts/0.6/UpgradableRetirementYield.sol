@@ -9,20 +9,20 @@ abstract contract IFreeFromUpTo is IERC20 {
     function freeFromUpTo(address from, uint256 value) external virtual returns(uint256 freed);
 }
 
-/// @notice This contract allows you to lock liquidity LP tokens and receive earnings
+/// @notice This contract allows you to lock liquidity YELD tokens and receive earnings
 /// It also allows you to extract those earnings
 contract UpgradableRetirementYield is Initializable, OwnableUpgradeSafe {
     using SafeMath for uint256;
 
-    // How many LP tokens each user has
+    // How many YELD tokens each user has
     mapping (address => uint256) public amountLocked;
     // The price when you extracted your earnings so we can whether you got new earnings or not
     mapping (address => uint256) public lastPriceEarningsExtracted;
-    // When the user started locking his LP tokens
+    // When the user started locking his YELD tokens
     mapping (address => uint256) public lockingTime;
-    // The uniswap LP token contract
+    // The uniswap YELD token contract
     address public yeld;
-    // How many LP tokens are locked
+    // How many YELD tokens are locked
     uint256 public totalLiquidityLocked;
     // The total YELDFee generated
     uint256 public totalYeldFeeMined;
@@ -68,7 +68,7 @@ contract UpgradableRetirementYield is Initializable, OwnableUpgradeSafe {
     /// @notice When ETH is added, the price is increased
     /// Price is = (feeIn / totalYELDFeeDistributed) + currentPrice
     /// padded with 18 zeroes that get removed after the calculations
-    /// if there are no locked LPs, the price is 0
+    /// if there are no locked YELDs, the price is 0
     function addFeeAndUpdatePrice(uint256 _feeIn) internal {
         accomulatedRewards = accomulatedRewards.add(_feeIn);
         if (totalLiquidityLocked == 0) {
@@ -92,12 +92,12 @@ contract UpgradableRetirementYield is Initializable, OwnableUpgradeSafe {
 
     function lockLiquidity(uint256 _amount) public {
         require(_amount > 0, 'UpgradableRetirementYield: Amount must be larger than zero');
-        // Transfer UNI-LP-V2 tokens inside here forever while earning fees from every transfer, LP tokens can't be extracted
+        // Transfer YELD tokens inside here forever while earning fees from every transfer
         uint256 approval = IERC20(yeld).allowance(msg.sender, address(this));
         require(approval >= _amount, 'UpgradableRetirementYield: You must approve the desired amount of YELD tokens to this contract first');
         IERC20(yeld).transferFrom(msg.sender, address(this), _amount);
         totalLiquidityLocked = totalLiquidityLocked.add(_amount);
-        // Extract earnings in case the user is not a new Locked LP
+        // Extract earnings in case the user is not a new Locked YELD
         if (lastPriceEarningsExtracted[msg.sender] != 0 && lastPriceEarningsExtracted[msg.sender] != yeldFeePrice) {
             extractEarnings();
         }
@@ -132,8 +132,8 @@ contract UpgradableRetirementYield is Initializable, OwnableUpgradeSafe {
         msg.sender.transfer(remaining);
     }
 
-    // The user must lock the liquidity for 1 year and only then can extract his Locked LP tokens
-    // he must extract all the LPs for simplicity and security purposes
+    // The user must lock the liquidity for 1 year and only then can extract his Locked YELD tokens
+    // he must extract all the YELDs for simplicity and security purposes
     function extractLiquidity() public {
         require(amountLocked[msg.sender] > 0, 'UpgradableRetirementYield: You must have locked liquidity provider tokens to extract them');
         require(now - lockingTime[msg.sender] >= timeToExitLiquidity, 'UpgradableRetirementYield: You must wait the specified locking time to extract your liquidity provider tokens');
